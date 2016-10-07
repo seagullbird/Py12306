@@ -4,6 +4,7 @@
 
 ```zsh
 $ git clone git@github.com:seagullbird/Py12306.git 
+$ source venv/bin/activate
 $ python3 tickets.py [-gdtkz] <from> <to> <date>
 ```
 
