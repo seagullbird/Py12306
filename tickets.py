@@ -40,14 +40,16 @@ class TrainCollection(object):
         显示车次、出发／到达站、出发／到达时间、历时、一等座、二等座、软卧、硬卧、硬座
     """
     header = 'train station time duration first second softsleep hardsleep hardsit'.split()
-    def __init__(self, rows):
+    train_type = {'G' : '-g', 'C' : '-g', 'D' : '-d', 'K' : '-k', 'T' : '-t', 'Z' : '-z'}
+    def __init__(self, rows, types):
         self.rows = rows
+        self.types = types
         
     def _get_duration(self, row):
         # 获取车次运行时间
         duration = row.get('lishi').replace(':', 'h') + 'm'
         if duration.startswith('00'):
-            return duration[4:]
+            return duration[3:]
         if duration.startswith('0'):
             return duration[1:]
         return duration
@@ -55,29 +57,30 @@ class TrainCollection(object):
     @property
     def trains(self):
         for row in self.rows:
-            train = [
-                # 车次
-                row['station_train_code'],
-                # 出发、到达站
-                '\n'.join([colored('green', row['from_station_name']), 
-                           colored('red', row['to_station_name'])]),
-                # 出发、到达时间
-                '\n'.join([colored('green', row['start_time']), 
-                           colored('red', row['arrive_time'])]),
-                # 历时
-                self._get_duration(row),
-                # 一等坐
-                row['zy_num'],
-                # 二等坐
-                row['ze_num'],
-                # 软卧
-                row['rw_num'],
-                # 软坐
-                row['yw_num'],
-                # 硬坐
-                row['yz_num']
-            ]
-            yield train
+            if not self.types or self.train_type.get(row['station_train_code'][0]) in self.types: 
+                train = [
+                    # 车次
+                    row['station_train_code'],
+                    # 出发、到达站
+                    '\n'.join([colored('green', row['from_station_name']), 
+                               colored('red', row['to_station_name'])]),
+                    # 出发、到达时间
+                    '\n'.join([colored('green', row['start_time']), 
+                               colored('red', row['arrive_time'])]),
+                    # 历时
+                    self._get_duration(row),
+                    # 一等坐
+                    row['zy_num'],
+                    # 二等坐
+                    row['ze_num'],
+                    # 软卧
+                    row['rw_num'],
+                    # 软坐
+                    row['yw_num'],
+                    # 硬坐
+                    row['yz_num']
+                ]
+                yield train
 
     def pretty_print(self):
         # 使用pretttable可视化数据
@@ -94,12 +97,17 @@ def cli():
     from_station = stations.get(args['<from>'])
     to_station = stations.get(args['<to>'])
     date = args['<date>']
+    
     # build URL
     url = 'https://kyfw.12306.cn/otn/lcxxcx/query?purpose_codes=ADULT&queryDate={}&from_station={}&to_station={}'.format(date, from_station, to_station)
     # verify=False 不验证证书
     r = requests.get(url, verify=False)
     rows = r.json()['data']['datas']
-    trains = TrainCollection(rows)
+    types = []
+    # get train types command
+    for item in args.items():
+        if item[1] == True: types.append(item[0])
+    trains = TrainCollection(rows, types)
     trains.pretty_print()
 
 
